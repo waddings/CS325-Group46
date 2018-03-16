@@ -2,6 +2,9 @@
 #include <fstream>
 #include <string.h>
 #include <string>
+#include <math.h>
+#include <vector>
+#include <limits.h>
 
 using namespace std;
 
@@ -9,18 +12,145 @@ struct city{
     int name, x, y;
 };
 
-struct city *buildCityList(char**);
+struct city *buildCityList(char**, int*);
+double d(struct city, struct city);
+void fillDistanceGraph(int, int**, struct city*);
+void primMST(int, int**, vector<int>*);
+int minKey(int*, bool*, int);
+void storeOdds(vector<int>, vector<int>*, int);
+void findPerfectMatching(int **, vector<int>, vector<int> *);
 
 int main(int argc, char* argv[]){
+    int numcities;
+    struct city *cities = buildCityList(argv, &numcities);
+    int **graph = new int*[numcities];
+    for(int i = 0; i < numcities; i++){
+      graph[i] = new int[numcities];
+    }
 
-  //  if(argv != 2)
-    //    exit(1);
-    struct city *cities = buildCityList(argv);
+    for(int i= 0; i < numcities; i++){
+      for(int j = 0; j < numcities; j++)
+          graph[i][j] = 0;
+    }
+
+    vector<int> *alist = new vector<int> [numcities];
+    vector<int> odds;
+
+    fillDistanceGraph(numcities, graph, cities);
+    primMST(numcities, graph, alist);
+    storeOdds(odds, alist, numcities);
+    findPerfectMatching(graph, odds, alist);
+
 
     return 0;
 }
 
-struct city *buildCityList(char* argv[]){
+void findPerfectMatching(int *graph[], vector<int> odds, vector<int> *alist){
+    int closest, length; //int d;
+    vector<int>::iterator tmp, first;
+
+    // for each odd node
+    while (!odds.empty()) {
+      first = odds.begin();
+      vector<int>::iterator it = odds.begin() + 1;
+      vector<int>::iterator end = odds.end();
+      length = INT_MAX;
+      for (; it != end; ++it) {
+        // if this node is closer than the current closest, update closest and length
+        if (graph[*first][*it] < length) {
+          length = graph[*first][*it];
+          closest = *it;
+          tmp = it;
+        }
+      }	// two nodes are matched, end of list reached
+      alist[*first].push_back(closest);
+      alist[closest].push_back(*first);
+      odds.erase(tmp);
+      odds.erase(first);
+    }
+}
+
+void storeOdds(vector<int> odds, vector<int> *alist, int n){
+    for (int i = 0; i < n; i++) {
+      if ((alist[i].size() % 2) != 0 )
+        odds.push_back(i);
+  }
+}
+
+void primMST(int n, int* graph[], vector<int> *alist){             //borrowed from: https://github.com/beckysag/traveling-salesman/blob/master/tsp.cpp
+  int key[n];   // Key values used to pick minimum weight edge in cut
+	bool in_mst[n];  // To represent set of vertices not yet included in MST
+	int parent[n];
+
+	// For each vertex v in V
+	for (int v = 0; v < n; v++) {
+		// Initialize all keys to infinity
+		key[v] = INT_MAX;
+
+		// Mark as not being in mst yet
+		in_mst[v] = false;
+	}
+
+	// Node 0 is the root node so give it the lowest distance (key)
+	key[0] = 0;
+	parent[0] = -1; // First node is always root of MST
+
+	for (int i = 0; i < n - 1; i++) {
+		// Find closest remaining (not in tree) vertex
+		int v = minKey(key, in_mst, n);
+
+		// Add vertex v to the MST
+		in_mst[v] = true;
+
+		// Look at each vertex u adjacent to v that's not yet in mst
+		for (int u = 0; u < n; u++) {
+			if (graph[v][u] && in_mst[u] == false && graph[v][u] < key[u]) {
+				// Update parent index of u
+				parent[u] = v;
+
+				// Update the key only if dist is smaller than key[u]
+				key[u] = graph[v][u];
+			}
+		}
+	}
+
+	// map relations from parent array onto matrix
+	for (int v1 = 0; v1 < n; v1++) {
+		// there is an edge between v1 and parent[v1]
+		int v2 = parent[v1];
+		if (v2 != -1) {
+			alist[v1].push_back(v2);
+			alist[v2].push_back(v1);
+		}
+	}
+}
+
+int minKey(int key[], bool mstSet[], int n) {
+	// Initialize min value
+	int min = INT_MAX;
+	int min_index;
+	for (int v = 0; v < n; v++)
+		if (mstSet[v] == false && key[v] < min) {
+			min = key[v];
+			min_index = v;
+		}
+	return min_index;
+}
+
+void fillDistanceGraph(int n, int* g[], struct city * c){
+    for(int i = 0; i < n; i++){
+        for(int j = i; j < n; j++)
+            g[i][j] = g[j][i] = d(c[i], c[j]);
+    }
+}
+
+double d(struct city c1, struct city c2){
+    int dx = ((float)((c2.x - c1.x) * (c2.x - c1.x)));
+    int dy = ((float)((c2.y - c1.y) * (c2.y - c1.y)));
+    return (floor((float)(sqrt(dx + dy)) + 0.5));
+}
+
+struct city *buildCityList(char* argv[], int *s){
     int n = 0;
     char filename[50];
     ifstream f;
@@ -32,6 +162,7 @@ struct city *buildCityList(char* argv[]){
     while(getline(f, buffer))
         n++;
   //  cout << "n is: " << n << endl;
+    *s = n;
     f.clear();
     f.seekg(0);
     struct city* cityList = new struct city[n];
