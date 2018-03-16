@@ -7,7 +7,8 @@
 
 Prims::Prims(int V) {
 	Vertices = V;
-	adj = new std::list<std::pair<int,int> >[V]; 
+	adj = new std::list<std::pair<int,int> >[V];
+	adjacencyList = new std::list<int>[V];
 }
 
 void Prims::addEdge(int u, int v, int w) {
@@ -49,7 +50,24 @@ void Prims::primsAlgorithm() {
 		
 	}
 
-	for (int i = 1; i < Vertices; i++) {
-		std::cout << parent[i] << " - " << i << std::endl;
-	}		
+	for (int i = 0; i < Vertices; i++) {
+		if (i != 0) {
+			adjacencyList[parent[i]].push_back(i);
+		}
+
+		// -1 represented no parental ancestor therefore we remove it in the adjacency list
+		if (parent[i] != -1) {  
+			adjacencyList[i].push_back(parent[i]);
+		}
+	}
+// Test output
+/*
+	std::list<int>::iterator it;
+	for (int i = 0; i < Vertices; i++) {
+		for (it = adjacencyList[i].begin(); it != adjacencyList[i].end(); it++) {
+			std::cout << *it << " "; 
+		}
+		std::cout << std::endl;
+	}
+*/
 }

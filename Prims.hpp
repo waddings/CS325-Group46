@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <queue>
 
+
 class Prims {
 	private:
 		int Vertices; // Number of Vertices
@@ -21,6 +22,8 @@ class Prims {
 		void addEdge(int u, int v, int w);
 		
 		void primsAlgorithm();
+
+		std::list<int> *adjacencyList;
 };
 
 
