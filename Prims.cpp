@@ -9,6 +9,9 @@ Prims::Prims(int V) {
 	Vertices = V;
 	adj = new std::list<std::pair<int,int> >[V];
 	adjacencyList = new std::list<int>[V];
+	numberOfOddVertices = 0;
+	oddVertices = new int [V];	
+
 }
 
 void Prims::addEdge(int u, int v, int w) {
@@ -26,10 +29,12 @@ void Prims::primsAlgorithm() {
 
 	std::vector<bool> inMST(Vertices, false); // This tracks the vertices if they are in the minimum spanning tree
 
+	// Set up the priority Queue
 	int source = 0;
 	priorityQ.push(std::make_pair(0, source));
 	key[source] = 0;		 
 
+	// Keep looping until all vertices have been added to the MST
 	while (!priorityQ.empty()) {
 		int u = priorityQ.top().second;
 		priorityQ.pop();
@@ -60,9 +65,23 @@ void Prims::primsAlgorithm() {
 			adjacencyList[i].push_back(parent[i]);
 		}
 	}
+
+	int counter = 0;	
+	std::list<int>::iterator it;
+	for (int i = 0; i < Vertices; i++) {
+		for (it = adjacencyList[i].begin(); it != adjacencyList[i].end(); it++) {
+			counter++;
+		}
+		if (counter % 2 == 1) {
+			oddVertices[numberOfOddVertices] = i;
+			numberOfOddVertices++; 	
+		}	
+		counter = 0;
+	}
+
 // Test output
 /*
-	std::list<int>::iterator it;
+	//std::list<int>::iterator it;
 	for (int i = 0; i < Vertices; i++) {
 		for (it = adjacencyList[i].begin(); it != adjacencyList[i].end(); it++) {
 			std::cout << *it << " "; 

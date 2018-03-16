@@ -24,6 +24,9 @@ class Prims {
 		void primsAlgorithm();
 
 		std::list<int> *adjacencyList;
+
+		int *oddVertices;
+		int numberOfOddVertices;
 };
 
 

@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string.h>
 #include <string>
+#include "Prims.hpp"
+#include <fstream>
 
 using namespace std;
 
@@ -10,15 +12,6 @@ struct city{
 };
 
 struct city *buildCityList(char**);
-
-int main(int argc, char* argv[]){
-
-  //  if(argv != 2)
-    //    exit(1);
-    struct city *cities = buildCityList(argv);
-
-    return 0;
-}
 
 struct city *buildCityList(char* argv[]){
     int n = 0;
@@ -42,4 +35,18 @@ struct city *buildCityList(char* argv[]){
     }
 
     return cityList;
+}
+
+/***********************************************************************
+ * 								       *
+ *                 MAIN PROGRAM STARTS HERE                            *
+ **********************************************************************/ 
+ 
+int main(int argc, char* argv[]){
+
+  //  if(argv != 2)
+    //    exit(1);
+    struct city *cities = buildCityList(argv);
+
+    return 0;
 }
