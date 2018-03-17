@@ -22,7 +22,7 @@ int minKey(int*, bool*, int);
 void storeOdds(vector<int>, vector<int>*, int);
 void findPerfectMatching(int **, vector<int>, vector<int> *);
 void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist);
-void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numcities, int* graph[]);
+void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numcities, int* graph[], struct city*);
 void outputFile(int &pathDistance, vector<int> &circuit, char **, struct city*, int);
 
 int main(int argc, char* argv[]){
@@ -47,21 +47,33 @@ int main(int argc, char* argv[]){
           graph[i][j] = 0;
     }
 
-    vector<int> *alist = new vector<int> [numcities];
+    //vector<int> *alist = new vector<int> [numcities];
     vector<int> odds;
 
   //  clock_t t1, t2;
   //  t1 = clock();
+
     fillDistanceGraph(numcities, graph, cities);
-    int starterVertex = 0;
+    //int starterVertex = 0;
+    vector<int> optimal;
+  for(int curr = 0; curr < numcities; curr++){
+    vector<int> *alist = new vector<int> [numcities];
     primMST(numcities, graph, alist);
     storeOdds(odds, alist, numcities);
     findPerfectMatching(graph, odds, alist);
-    CreateEuler(starterVertex, circuit, numcities, alist);
-    convertToHamiltonian(circuit, finalPathDistance, numcities, graph);
+    CreateEuler(curr, circuit, numcities, alist);
+    convertToHamiltonian(circuit, pathDistance, numcities, graph, cities);
+    if(pathDistance < finalPathDistance){
+      finalPathDistance = pathDistance;
+      optimal = circuit;
+    }
+    circuit.clear();
+    odds.clear();
+    delete [] alist;
+  }
   //  t2 = clock();
   //  cout << ((float)t2 - (float)t1)/ CLOCKS_PER_SEC << endl;
-    outputFile(finalPathDistance, circuit, argv, cities, numcities);
+    outputFile(finalPathDistance, optimal, argv, cities, numcities);
     delete [] cities;
     for(int i = 0; i < numcities; i++)
         delete [] graph[i];
@@ -142,10 +154,10 @@ void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist )
 		}
 	}
 	path.push_back(pos);
-	vector<int>::iterator itr;
+	//vector<int>::iterator itr;
 }
 
-void convertToHamiltonian(vector<int> &path, int &pathDistance, int numcities, int* graph[]) {
+void convertToHamiltonian(vector<int> &path, int &pathDistance, int numcities, int* graph[], struct city* c) {
 	// remove nodes that have been visited
 	bool visited[numcities];
 	for (int i = 0; i < numcities; i++) {
@@ -175,6 +187,8 @@ void convertToHamiltonian(vector<int> &path, int &pathDistance, int numcities, i
 
 	// Add the distance back to the root
 	//pathDistance += graph[*cur][*next];
+  pathDistance += d(c[*(path.begin())], c[*(path.rbegin())]);
+  //cout << pathDistance << "!" << endl;
 }
 
 void primMST(int n, int* graph[], vector<int> *alist){             //borrowed from: https://github.com/beckysag/traveling-salesman/blob/master/tsp.cpp
@@ -284,7 +298,7 @@ void outputFile(int &pathDistance, vector<int> &circuit, char *argv[], struct ci
 	outputFile.open(outstring);
   struct city c [(int)circuit.size()];
 
-  int i = 0;
+  /*int i = 0;
 	for (vector<int>::iterator itr = circuit.begin(); itr != circuit.end(); itr++) {
     c[i] = cities[*itr];
     i++;
@@ -298,5 +312,11 @@ void outputFile(int &pathDistance, vector<int> &circuit, char *argv[], struct ci
       outputFile << c[i].name << endl;
 	outputFile.close();
 
-  delete [] outstring;
+  delete [] outstring;*/
+  outputFile << pathDistance << endl;
+  for (vector<int>::iterator itr = circuit.begin(); itr != circuit.end(); itr++) {
+  //  c[i] = cities[*itr];
+    //i++;
+    outputFile << *itr << endl;
+  }
 }
