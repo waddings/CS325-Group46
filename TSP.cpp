@@ -23,7 +23,7 @@ void storeOdds(vector<int>, vector<int>*, int);
 void findPerfectMatching(int **, vector<int>, vector<int> *);
 void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist);
 void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numcities, int* graph[]);
-void outputFile(int &pathDistance, vector<int> &circuit, char **);
+void outputFile(int &pathDistance, vector<int> &circuit, char **, struct city*, int);
 
 int main(int argc, char* argv[]){
     // Ensure the user entered a filename argument
@@ -50,8 +50,8 @@ int main(int argc, char* argv[]){
     vector<int> *alist = new vector<int> [numcities];
     vector<int> odds;
 
-    clock_t t1, t2;
-    t1 = clock();
+  //  clock_t t1, t2;
+  //  t1 = clock();
     fillDistanceGraph(numcities, graph, cities);
     int starterVertex = 0;
     primMST(numcities, graph, alist);
@@ -59,9 +59,9 @@ int main(int argc, char* argv[]){
     findPerfectMatching(graph, odds, alist);
     CreateEuler(starterVertex, circuit, numcities, alist);
     convertToHamiltonian(circuit, finalPathDistance, numcities, graph);
-    t2 = clock();
-    cout << ((float)t2 - (float)t1)/ CLOCKS_PER_SEC << endl;
-    outputFile(finalPathDistance, circuit, argv);
+  //  t2 = clock();
+  //  cout << ((float)t2 - (float)t1)/ CLOCKS_PER_SEC << endl;
+    outputFile(finalPathDistance, circuit, argv, cities, numcities);
     delete [] cities;
     for(int i = 0; i < numcities; i++)
         delete [] graph[i];
@@ -276,17 +276,26 @@ struct city *buildCityList(char* argv[], int *s){
     return cityList;
 }
 
-void outputFile(int &pathDistance, vector<int> &circuit, char *argv[]) {
+void outputFile(int &pathDistance, vector<int> &circuit, char *argv[], struct city *cities, int numcities) {
 	ofstream outputFile;
   char *outstring = new char [strlen(argv[1]) + 5];
   strcpy(outstring, argv[1]);
   strcat(outstring, ".tour");
 	outputFile.open(outstring);
-	outputFile << pathDistance << std::endl;
+  struct city c [(int)circuit.size()];
 
+  int i = 0;
 	for (vector<int>::iterator itr = circuit.begin(); itr != circuit.end(); itr++) {
-		outputFile << *itr << std::endl;
+    c[i] = cities[*itr];
+    i++;
 	}
+  int dist = 0;
+  for(i = 0; i < numcities && i+1 < numcities; i++)
+      dist += d(c[i], c[i+1]);
+  dist += d(c[0], c[numcities-1]);
+  outputFile << dist << endl;
+  for(i = 0; i < numcities; i++)
+      outputFile << c[i].name << endl;
 	outputFile.close();
 
   delete [] outstring;
