@@ -6,6 +6,7 @@
 #include <math.h>
 #include <vector>
 #include <limits.h>
+#include <time.h>
 
 using namespace std;
 
@@ -22,19 +23,19 @@ void storeOdds(vector<int>, vector<int>*, int);
 void findPerfectMatching(int **, vector<int>, vector<int> *);
 void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist);
 void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numcities, int* graph[]);
-void outputFile(int &pathDistance, vector<int> &circuit); 
- 
-int main(int argc, char* argv[]){
-    // Ensure the user entered a filename argument	
-    if (argc < 2) {
-	return(-1);
-    }	
+void outputFile(int &pathDistance, vector<int> &circuit, char **);
 
-    // Initialize starting Variables 	
+int main(int argc, char* argv[]){
+    // Ensure the user entered a filename argument
+    if (argc < 2) {
+	     return(-1);
+    }
+
+    // Initialize starting Variables
     int numcities;
     int pathDistance = 0;
-    int finalPathDistance = INT_MAX; // Set equal to really high number	
-    vector<int> circuit;	
+    int finalPathDistance = INT_MAX; // Set equal to really high number
+    vector<int> circuit;
     struct city *cities = buildCityList(argv, &numcities);
     int **graph = new int*[numcities];
     for(int i = 0; i < numcities; i++){
@@ -45,32 +46,26 @@ int main(int argc, char* argv[]){
       for(int j = 0; j < numcities; j++)
           graph[i][j] = 0;
     }
-	
+
     vector<int> *alist = new vector<int> [numcities];
     vector<int> odds;
 
+    clock_t t1, t2;
+    t1 = clock();
     fillDistanceGraph(numcities, graph, cities);
+    int starterVertex = 0;
+    primMST(numcities, graph, alist);
+    storeOdds(odds, alist, numcities);
+    findPerfectMatching(graph, odds, alist);
+    CreateEuler(starterVertex, circuit, numcities, alist);
+    convertToHamiltonian(circuit, finalPathDistance, numcities, graph);
+    t2 = clock();
+    cout << ((float)t2 - (float)t1)/ CLOCKS_PER_SEC << endl;
+    outputFile(finalPathDistance, circuit, argv);
+    delete [] cities;
+    for(int i = 0; i < numcities; i++)
+        delete [] graph[i];
 
-    // Run every vertex as a start point to find optimum value
-    for (int nextVertex = 0; nextVertex < numcities; nextVertex++) {
-	    primMST(numcities, graph, alist);
-	    storeOdds(odds, alist, numcities);
-	    findPerfectMatching(graph, odds, alist);
-	    CreateEuler(nextVertex, circuit, numcities, alist);
-	    convertToHamiltonian(circuit, pathDistance, numcities, graph);	
-	    outputFile(pathDistance, circuit);
-	
-		std::cout << "pathDistance: " << pathDistance << " finalPathDistance: " << finalPathDistance << std::endl;
-	    if (pathDistance < finalPathDistance) {
-		finalPathDistance = pathDistance;
-	    }		
-	    alist->clear();
-	    odds.clear();
-	    circuit.clear();
-	    pathDistance = 0;	
-    }	
-	
-    std::cout << "Path Distance: " << finalPathDistance << std::endl;
     return 0;
 }
 
@@ -106,7 +101,7 @@ void storeOdds(vector<int> odds, vector<int> *alist, int n){
   }
 }
 
-// Borroed from github.com/backysag/traveling-salesman/blob/master/tsp.cpp
+// Borrowed from github.com/backysag/traveling-salesman/blob/master/tsp.cpp
 void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist ) {
 	// copy the adjacency list so we can modify it later
 	std::vector<int> * temp = new vector<int> [numcities];
@@ -128,7 +123,7 @@ void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist )
 			int last = stack.top();
 			stack.pop();
 			pos = last;
-		}	
+		}
 		else {
 			// add vertex to the stack
 			stack.push(pos);
@@ -142,7 +137,7 @@ void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist )
 					temp[neighbor].erase(temp[neighbor].begin() + i);
 					break;
 				}
-			} 
+			}
 			pos = neighbor;
 		}
 	}
@@ -150,7 +145,7 @@ void CreateEuler(int pos, vector<int> &path, int numcities, vector<int> *alist )
 	vector<int>::iterator itr;
 }
 
-void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numcities, int* graph[]) {
+void convertToHamiltonian(vector<int> &path, int &pathDistance, int numcities, int* graph[]) {
 	// remove nodes that have been visited
 	bool visited[numcities];
 	for (int i = 0; i < numcities; i++) {
@@ -179,8 +174,8 @@ void convertToHamiltonian(std::vector<int> &path, int &pathDistance, int numciti
 	}
 
 	// Add the distance back to the root
-	pathDistance += graph[*cur][*next];
-} 
+	//pathDistance += graph[*cur][*next];
+}
 
 void primMST(int n, int* graph[], vector<int> *alist){             //borrowed from: https://github.com/beckysag/traveling-salesman/blob/master/tsp.cpp
   int key[n];   // Key values used to pick minimum weight edge in cut
@@ -253,7 +248,7 @@ void fillDistanceGraph(int n, int* g[], struct city * c){
 double d(struct city c1, struct city c2){
     int dx = ((float)((c2.x - c1.x) * (c2.x - c1.x)));
     int dy = ((float)((c2.y - c1.y) * (c2.y - c1.y)));
-    return (floor((float)(sqrt(dx + dy)) + 0.5));
+    return (floor((float)(sqrt(dx + dy))+ 0.5));
 }
 
 struct city *buildCityList(char* argv[], int *s){
@@ -281,15 +276,18 @@ struct city *buildCityList(char* argv[], int *s){
     return cityList;
 }
 
-void outputFile(int &pathDistance, vector<int> &circuit) {
+void outputFile(int &pathDistance, vector<int> &circuit, char *argv[]) {
 	ofstream outputFile;
-	outputFile.open("results.txt");
+  char *outstring = new char [strlen(argv[1]) + 5];
+  strcpy(outstring, argv[1]);
+  strcat(outstring, ".tour");
+	outputFile.open(outstring);
 	outputFile << pathDistance << std::endl;
 
 	for (vector<int>::iterator itr = circuit.begin(); itr != circuit.end(); itr++) {
 		outputFile << *itr << std::endl;
 	}
 	outputFile.close();
+
+  delete [] outstring;
 }
-
-
